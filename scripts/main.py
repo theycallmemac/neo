@@ -12,15 +12,22 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from concurrent.futures import ThreadPoolExecutor
 
 
-def get_credentials():
+def get_fb_credentials():
     fb_email, fb_pw = input("Facebook Login Email: "), getpass(
         "Facebook Password: ")
     return [fb_email, fb_pw]
 
 
-def open_vim():
+def get_goog_credentials():
+    goog_email, dcu_uname, dcu_pw = input("Gmail: "), input("DCU Username: "), getpass(
+        "DCU Password: ")
+    return [goog_email, dcu_uname, dcu_pw]
+
+
+def event_setup():
     title = input("Event Name: ")
     with NamedTemporaryFile(suffix='tmp') as tmp:
         call(['vim', tmp.name])
@@ -97,6 +104,7 @@ def fb_create(driver, event_description, details):
         By.XPATH, "//button[@data-testid='event-create-dialog-confirm-button']")
     submit.click()
     driver.quit()
+    return "Created Facebook Event."
 
 
 def get_am_or_pm(time):
@@ -106,8 +114,92 @@ def get_am_or_pm(time):
     else:
         time = time,
         ampm = 'AM'
-
     return ampm
+
+
+def goog_login(google, event_description, details):
+    driver = setup_driver()
+    driver.get('https://accounts.google.com/ServiceLogin')
+    email = driver.find_element_by_id('identifierId')
+    next = driver.find_element_by_id('identifierNext')
+    email.send_keys(google[0])
+    next.click()
+    uname = driver.find_element_by_name('j_username')
+    pw = driver.find_element_by_name('j_password')
+    uname.send_keys(google[1])
+    pw.send_keys(google[2])
+    proceed = driver.find_element_by_name('_eventId_proceed')
+    proceed.click()
+    cal_create(driver, event_description, details, google)
+
+
+def cal_create(driver, event_description, details, google):
+    months = {
+        "1": 'Jan',
+        "2": 'Feb',
+        "3": 'Mar',
+        "4": 'Apr',
+        "5": 'May',
+        "6": 'Jun',
+        "7": 'Jul',
+        "8": 'Aug',
+        "9": 'Sep',
+        "10": 'Oct',
+        "11": 'Nov',
+        "12": 'Dec',
+    }
+
+    driver.get('https://calendar.google.com/calendar/r')
+    email = driver.find_element_by_id('identifierId')
+    next = driver.find_element_by_id('identifierNext')
+    email.send_keys(google[0])
+    next.click()
+    sleep(24)
+    plus = driver.find_element_by_class_name('zlaSJd')
+    plus.click()
+    event_name, location, description = driver.find_element_by_id(
+        'xTiIn'), driver.find_elements_by_class_name('whsOnd')[5], driver.find_element_by_id('hInySc0')
+    event_name.send_keys(event_description[0])
+    location.send_keys(details[0])
+    description.send_keys(event_description[1])
+    start_time, start_date = driver.find_element_by_id(
+        'xStTiIn'), driver.find_element_by_id('xStDaIn')
+    break_date = details[3].split("/")
+    formatted_date = ' '.join([break_date[0],
+                               months[break_date[1]], break_date[2]])
+    driver.execute_script(
+        f"arguments[0].value = '{formatted_date}';", start_date)
+    time = int(details[1][:2])
+    ampm = get_am_or_pm(time).lower()
+    details[1] += ampm
+    driver.execute_script(
+        f"arguments[0].value = '{details[1]}';", start_time)
+    end_time, end_date = driver.find_element_by_id(
+        'xEnTiIn'), driver.find_element_by_id('xEnDaIn')
+    driver.execute_script(
+        f"arguments[0].value = '{formatted_date}';", end_date)
+    time = int(details[2][:2])
+    ampm = get_am_or_pm(time).lower()
+    details[2] += ampm
+    driver.execute_script(
+        f"arguments[0].value = '{details[2]}';", end_time)
+    calendar = driver.find_elements_by_class_name('Z7IIl')[0]
+    calendar.click()
+    # currently only works for me, working on getting it to click on the Redbrick calendar
+    rb = driver.find_elements_by_class_name('Z7IIl')[16]
+    rb = driver.find_elements_by_class_name('Z7IIl')[16]
+    save = driver.find_elements_by_class_name('RveJvd')[6]
+    save.click()
+    driver.quit()
+    return "Created Calendar Event."
+
+
+def facebook_operations(fb, event_description, details):
+    fb_login(fb, event_description, details)
+
+
+def google_operations(goog, event_description, details):
+    goog_login(goog, event_description, details)
 
 
 @command()
@@ -117,6 +209,15 @@ def get_am_or_pm(time):
 @argument('date')
 def cli(room, start_time, end_time, date):
     details = [room, start_time, end_time, date]
-    facebook = get_credentials()
-    event_description = open_vim()
-    fb_login(facebook, event_description, details)
+    executors = []
+    event_description = event_setup()
+    echo(f"Event Description: {event_description[1]}")
+    google = get_goog_credentials()
+    facebook = get_fb_credentials()
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        executors.append(executor.submit(
+            facebook_operations, facebook, event_description, details))
+        executors.append(executor.submit(
+            google_operations, google, event_description, details))
+    for exec in executors:
+        print(exec.result())

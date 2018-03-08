@@ -38,17 +38,17 @@ After installation simply run something like:
 ---
 
 ### Dependencies
-- Click
-- Selenium
+- click==6.7
+- selenium==3.9.0
 
 ### What it can do
 The main aim of this program is to perform Facebook event creation, Google Calendar event creation, and event location booking. This will be done use the ```concurrent.futures``` library.
 
 So far the tool can:
 
-- create Facebook events [ x ]
-- create Google Calendar events [ ]
-- book rooms for the event
+- [x] create Facebook events
+- [x] create Google Calendar events
+- [ ] book rooms for the event
 
 ---
 
