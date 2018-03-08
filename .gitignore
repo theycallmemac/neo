@@ -1,0 +1,7 @@
+# distribution / packaging
+env/
+*.egg-info/
+
+
+# browser engine logs
+geckodriver.log
