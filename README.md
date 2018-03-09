@@ -48,7 +48,7 @@ So far the tool can:
 
 - [x] create Facebook events
 - [x] create Google Calendar events
-- [ ] book rooms for the event
+- [x] book rooms for the event
 
 ---
 

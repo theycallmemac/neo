@@ -13,6 +13,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from concurrent.futures import ThreadPoolExecutor
+import smtplib
 
 
 def get_fb_credentials():
@@ -101,10 +102,9 @@ def fb_create(driver, event_description, details):
     driver.execute_script(
         f'arguments[0].innerHTML = "{ampm}";', end_ampm)
     submit = driver.find_element(
-        By.XPATH, "//button[@data-testid='event-create-dialog-confirm-button']")
+       By.XPATH, "//button[@data-testid='event-create-dialog-confirm-button']")
     submit.click()
     driver.quit()
-    return "Created Facebook Event."
 
 
 def get_am_or_pm(time):
@@ -124,8 +124,9 @@ def goog_login(google, event_description, details):
     next = driver.find_element_by_id('identifierNext')
     email.send_keys(google[0])
     next.click()
-    uname = driver.find_element_by_name('j_username')
-    pw = driver.find_element_by_name('j_password')
+    sleep(5)
+    uname = driver.find_element_by_id('username')
+    pw = driver.find_element_by_id('password')
     uname.send_keys(google[1])
     pw.send_keys(google[2])
     proceed = driver.find_element_by_name('_eventId_proceed')
@@ -154,9 +155,10 @@ def cal_create(driver, event_description, details, google):
     next = driver.find_element_by_id('identifierNext')
     email.send_keys(google[0])
     next.click()
-    sleep(24)
+    sleep(10)
     plus = driver.find_element_by_class_name('zlaSJd')
     plus.click()
+    sleep(5)
     event_name, location, description = driver.find_element_by_id(
         'xTiIn'), driver.find_elements_by_class_name('whsOnd')[5], driver.find_element_by_id('hInySc0')
     event_name.send_keys(event_description[0])
@@ -185,21 +187,46 @@ def cal_create(driver, event_description, details, google):
         f"arguments[0].value = '{details[2]}';", end_time)
     calendar = driver.find_elements_by_class_name('Z7IIl')[0]
     calendar.click()
+    sleep(5)
     # currently only works for me, working on getting it to click on the Redbrick calendar
     rb = driver.find_elements_by_class_name('Z7IIl')[16]
     rb = driver.find_elements_by_class_name('Z7IIl')[16]
     save = driver.find_elements_by_class_name('RveJvd')[6]
     save.click()
     driver.quit()
-    return "Created Calendar Event."
+
+
+def book_lab(goog, details):
+    FROM = goog[0]
+    TO = ['irene.mcevoy@dcu.ie']
+    SUBJECT = 'Lab Booking'
+    BODY = "Just wondering if you could book " + \
+        details[0] + " on the " + \
+        details[3] + " from " + details[1] + " to " + details[2] + \
+        " for Redbrick" + ".\n\nThank you."
+    message = """\nFrom: %s\nTo: %s\nSubject: %s\n\n%s""" % (
+        FROM, ", ".join(TO), SUBJECT, BODY)
+    server = smtplib.SMTP("smtp.gmail.com", 587)
+    server.ehlo()
+    server.starttls()
+    server.login(goog[0], goog[2])
+    server.sendmail(FROM, TO, message)
+    server.close()
 
 
 def facebook_operations(fb, event_description, details):
     fb_login(fb, event_description, details)
+    return "Created Facebook Event."
 
 
 def google_operations(goog, event_description, details):
     goog_login(goog, event_description, details)
+    return "Created Calendar Event."
+
+
+def email_operations(goog, event_description, details):
+    book_lab(goog, details)
+    return "Booked Room."
 
 
 @command()
@@ -214,10 +241,12 @@ def cli(room, start_time, end_time, date):
     echo(f"Event Description: {event_description[1]}")
     google = get_goog_credentials()
     facebook = get_fb_credentials()
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=8) as executor:
         executors.append(executor.submit(
             facebook_operations, facebook, event_description, details))
         executors.append(executor.submit(
             google_operations, google, event_description, details))
+        executors.append(executor.submit(
+            email_operations, google, event_description, details))
     for exec in executors:
         print(exec.result())
