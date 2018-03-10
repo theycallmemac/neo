@@ -5,13 +5,16 @@ from sys import argv, exit
 from os import environ
 from tempfile import NamedTemporaryFile
 from subprocess import call
-from time import sleep
 from click import command, echo, argument
 from getpass import getpass
+from contextlib import contextmanager
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from concurrent.futures import ThreadPoolExecutor
 import smtplib
 
@@ -23,8 +26,8 @@ def get_fb_credentials():
 
 
 def get_goog_credentials():
-    goog_email, dcu_uname, dcu_pw = input("Gmail: "), input("DCU Username: "), getpass(
-        "DCU Password: ")
+    goog_email, dcu_uname, dcu_pw = input("Gmail: "), input(
+        "DCU Username: "), getpass("DCU Password: ")
     return [goog_email, dcu_uname, dcu_pw]
 
 
@@ -42,14 +45,19 @@ def setup_driver():
     options.add_argument("--disable-notifications")
     ffprofile = webdriver.FirefoxProfile()
     ffprofile.set_preference("dom.webnotifications.enabled", False)
-    driver = webdriver.Firefox(firefox_profile=ffprofile,
-                               firefox_options=options, executable_path='/usr/local/bin/geckodriver')
+    driver = webdriver.Firefox(
+        firefox_profile=ffprofile,
+        firefox_options=options,
+        executable_path='/usr/local/bin/geckodriver')
     return driver
 
 
 def fb_login(fb, event_description, details):
     driver = setup_driver()
     driver.get('https://www.facebook.com/login/')
+    element = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.NAME, "email"))
+    )
     email = driver.find_element_by_name('email')
     pw = driver.find_element_by_name('pass')
     login = driver.find_element_by_name('login')
@@ -61,16 +69,27 @@ def fb_login(fb, event_description, details):
 
 def fb_create(driver, event_description, details):
     driver.get('https://www.facebook.com/dcuredbrick/')
+    element = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located(
+            (By.XPATH, '//span[text()="Create an event"]'))
+    )
     event = driver.find_elements(
         By.XPATH, '//span[text()="Create an event"]')[0]
     driver.execute_script("window.scrollTo(0, 1000)")
     event.click()
-    sleep(15)
+    element = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located(
+            (By.XPATH, "//input[@data-testid='event-create-dialog-name-field']"))
+    )
     event_name, location, description = driver.find_element(
         By.XPATH, "//input[@data-testid='event-create-dialog-name-field']"), driver.find_element(
         By.XPATH, "//input[@data-testid='event-create-dialog-where-field']"), driver.find_element(
         By.XPATH, "//div[@data-testid='event-create-dialog-details-field']")
 
+    element = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located(
+            (By.CLASS_NAME, '_4nx3'))
+    )
     start_hour, start_min, start_ampm, start_date = driver.find_elements_by_class_name('_4nx3')[0], driver.find_elements_by_class_name(
         '_4nx3')[1], driver.find_elements_by_class_name('_4nx3')[2], driver.find_elements(By.XPATH, "//input[@placeholder='mm/dd/yyyy']")[0]
     end_hour, end_min, end_ampm, end_date = driver.find_elements_by_class_name('_4nx3')[3], driver.find_elements_by_class_name(
@@ -102,7 +121,7 @@ def fb_create(driver, event_description, details):
     driver.execute_script(
         f'arguments[0].innerHTML = "{ampm}";', end_ampm)
     submit = driver.find_element(
-       By.XPATH, "//button[@data-testid='event-create-dialog-confirm-button']")
+        By.XPATH, "//button[@data-testid='event-create-dialog-confirm-button']")
     submit.click()
     driver.quit()
 
@@ -120,45 +139,47 @@ def get_am_or_pm(time):
 def goog_login(google, event_description, details):
     driver = setup_driver()
     driver.get('https://accounts.google.com/ServiceLogin')
+
     email = driver.find_element_by_id('identifierId')
     next = driver.find_element_by_id('identifierNext')
     email.send_keys(google[0])
     next.click()
-    sleep(5)
+    element = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "username"))
+    )
     uname = driver.find_element_by_id('username')
     pw = driver.find_element_by_id('password')
     uname.send_keys(google[1])
     pw.send_keys(google[2])
     proceed = driver.find_element_by_name('_eventId_proceed')
+    element = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.NAME, "_eventId_proceed"))
+    )
     proceed.click()
     cal_create(driver, event_description, details, google)
 
 
 def cal_create(driver, event_description, details, google):
-    months = {
-        "1": 'Jan',
-        "2": 'Feb',
-        "3": 'Mar',
-        "4": 'Apr',
-        "5": 'May',
-        "6": 'Jun',
-        "7": 'Jul',
-        "8": 'Aug',
-        "9": 'Sep',
-        "10": 'Oct',
-        "11": 'Nov',
-        "12": 'Dec',
-    }
+    driver.get('https://calendar.google.com/calendar/r/')
 
-    driver.get('https://calendar.google.com/calendar/r')
     email = driver.find_element_by_id('identifierId')
     next = driver.find_element_by_id('identifierNext')
     email.send_keys(google[0])
+    element = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.ID, "identifierNext"))
+    )
     next.click()
-    sleep(10)
+    element = WebDriverWait(driver, 20).until(
+        EC.visibility_of_element_located((By.CLASS_NAME, "zlaSJd"))
+    )
     plus = driver.find_element_by_class_name('zlaSJd')
     plus.click()
-    sleep(5)
+    element = WebDriverWait(driver, 20).until(
+        EC.visibility_of_element_located((By.ID, "xTiIn"))
+    )
+    element = WebDriverWait(driver, 20).until(
+        EC.visibility_of_element_located((By.ID, "hInySc0"))
+    )
     event_name, location, description = driver.find_element_by_id(
         'xTiIn'), driver.find_elements_by_class_name('whsOnd')[5], driver.find_element_by_id('hInySc0')
     event_name.send_keys(event_description[0])
@@ -167,10 +188,13 @@ def cal_create(driver, event_description, details, google):
     start_time, start_date = driver.find_element_by_id(
         'xStTiIn'), driver.find_element_by_id('xStDaIn')
     break_date = details[3].split("/")
-    formatted_date = ' '.join([break_date[0],
-                               months[break_date[1]], break_date[2]])
-    driver.execute_script(
-        f"arguments[0].value = '{formatted_date}';", start_date)
+    formatted_date = ''.join(
+        [break_date[0], break_date[1], break_date[2]])
+    dates = driver.find_elements_by_class_name('r4nke')[1:]
+    start_date.click()
+    for date in dates:
+        if break_date[0] == date.text:
+            date.click()
     time = int(details[1][:2])
     ampm = get_am_or_pm(time).lower()
     details[1] += ampm
@@ -178,8 +202,10 @@ def cal_create(driver, event_description, details, google):
         f"arguments[0].value = '{details[1]}';", start_time)
     end_time, end_date = driver.find_element_by_id(
         'xEnTiIn'), driver.find_element_by_id('xEnDaIn')
-    driver.execute_script(
-        f"arguments[0].value = '{formatted_date}';", end_date)
+    end_date.click()
+    for date in dates:
+        if break_date[0] == date.text:
+            date.click()
     time = int(details[2][:2])
     ampm = get_am_or_pm(time).lower()
     details[2] += ampm
@@ -187,10 +213,10 @@ def cal_create(driver, event_description, details, google):
         f"arguments[0].value = '{details[2]}';", end_time)
     calendar = driver.find_elements_by_class_name('Z7IIl')[0]
     calendar.click()
-    sleep(5)
-    # currently only works for me, working on getting it to click on the Redbrick calendar
+    # currently only works for me, working on getting it to click on the
+    # Redbrick calendar
     rb = driver.find_elements_by_class_name('Z7IIl')[16]
-    rb = driver.find_elements_by_class_name('Z7IIl')[16]
+    rb.click()
     save = driver.find_elements_by_class_name('RveJvd')[6]
     save.click()
     driver.quit()
@@ -198,7 +224,7 @@ def cal_create(driver, event_description, details, google):
 
 def book_lab(goog, details):
     FROM = goog[0]
-    TO = ['irene.mcevoy@dcu.ie']
+    TO = ['james.mcdermott89@gmail.com']
     SUBJECT = 'Lab Booking'
     BODY = "Just wondering if you could book " + \
         details[0] + " on the " + \
