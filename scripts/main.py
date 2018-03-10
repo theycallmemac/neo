@@ -213,10 +213,11 @@ def cal_create(driver, event_description, details, google):
         f"arguments[0].value = '{details[2]}';", end_time)
     calendar = driver.find_elements_by_class_name('Z7IIl')[0]
     calendar.click()
-    # currently only works for me, working on getting it to click on the
-    # Redbrick calendar
-    rb = driver.find_elements_by_class_name('Z7IIl')[16]
-    rb.click()
+    cals = driver.find_elements_by_class_name('Z7IIl')
+    for cal in cals:
+        if cal.text == "Redbrick DCU's Networking Society":
+            cal.click()
+            break
     save = driver.find_elements_by_class_name('RveJvd')[6]
     save.click()
     driver.quit()
@@ -224,7 +225,7 @@ def cal_create(driver, event_description, details, google):
 
 def book_lab(goog, details):
     FROM = goog[0]
-    TO = ['james.mcdermott89@gmail.com']
+    TO = ['irene.mcevoy@dcu.ie']
     SUBJECT = 'Lab Booking'
     BODY = "Just wondering if you could book " + \
         details[0] + " on the " + \
@@ -268,8 +269,8 @@ def cli(room, start_time, end_time, date):
     google = get_goog_credentials()
     facebook = get_fb_credentials()
     with ThreadPoolExecutor(max_workers=8) as executor:
-        executors.append(executor.submit(
-            facebook_operations, facebook, event_description, details))
+        # executors.append(executor.submit(
+        #    facebook_operations, facebook, event_description, details))
         executors.append(executor.submit(
             google_operations, google, event_description, details))
         executors.append(executor.submit(
