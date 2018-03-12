@@ -6,8 +6,6 @@ from os import environ
 from tempfile import NamedTemporaryFile
 from subprocess import call
 from click import command, echo, argument
-from getpass import getpass
-from contextlib import contextmanager
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
@@ -17,17 +15,27 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from concurrent.futures import ThreadPoolExecutor
 import smtplib
+from yaml import load, YAMLError
 
 
 def get_fb_credentials():
-    fb_email, fb_pw = input("Facebook Login Email: "), getpass(
-        "Facebook Password: ")
+    with open('config.yaml', 'r') as f:
+        try:
+            config = load(f)
+            fb_email, fb_pw = config['config']['facebook_login'], config['config']['facebook_pw']
+        except YAMLError as e:
+            print(e)
     return [fb_email, fb_pw]
 
 
 def get_goog_credentials():
-    goog_email, dcu_uname, dcu_pw = input("Gmail: "), input(
-        "DCU Username: "), getpass("DCU Password: ")
+    with open('config.yaml', 'r') as f:
+        try:
+            config = load(f)
+            goog_email, dcu_uname, dcu_pw = config['config']['gmail'], config[
+                'config']['dcu_uname'], config['config']['dcu_pw']
+        except YAMLError as e:
+            print(e)
     return [goog_email, dcu_uname, dcu_pw]
 
 
@@ -41,14 +49,22 @@ def event_setup():
 
 def setup_driver():
     options = Options()
-    options.add_argument("--headless")
+    # options.add_argument("--headless")
     options.add_argument("--disable-notifications")
-    ffprofile = webdriver.FirefoxProfile()
-    ffprofile.set_preference("dom.webnotifications.enabled", False)
-    driver = webdriver.Firefox(
-        firefox_profile=ffprofile,
-        firefox_options=options,
-        executable_path='/usr/local/bin/geckodriver')
+    with open('config.yaml', 'r') as f:
+        try:
+            config = load(f)
+            driver = config['config']['driver']
+        except YAMLError as e:
+            print(e)
+
+    if driver == 'firefox':
+        ffprofile = webdriver.FirefoxProfile()
+        ffprofile.set_preference("dom.webnotifications.enabled", False)
+        driver = webdriver.Firefox(
+            firefox_profile=ffprofile,
+            firefox_options=options,
+            executable_path='/usr/local/bin/geckodriver')
     return driver
 
 
@@ -269,8 +285,8 @@ def cli(room, start_time, end_time, date):
     google = get_goog_credentials()
     facebook = get_fb_credentials()
     with ThreadPoolExecutor(max_workers=8) as executor:
-        # executors.append(executor.submit(
-        #    facebook_operations, facebook, event_description, details))
+        executors.append(executor.submit(
+            facebook_operations, facebook, event_description, details))
         executors.append(executor.submit(
             google_operations, google, event_description, details))
         executors.append(executor.submit(

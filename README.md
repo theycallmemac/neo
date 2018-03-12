@@ -40,6 +40,7 @@ After installation simply run something like:
 ### Dependencies
 - click==6.7
 - selenium==3.9.0
+- pyyaml==3.12.0
 
 ### What it can do
 The main aim of this program is to perform Facebook event creation, Google Calendar event creation, and event location booking. This will be done use the ```concurrent.futures``` library.
