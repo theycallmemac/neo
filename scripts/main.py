@@ -16,13 +16,15 @@ from selenium.common.exceptions import TimeoutException
 from concurrent.futures import ThreadPoolExecutor
 import smtplib
 from yaml import load, YAMLError
+from base64 import b64decode as b64
 
 
 def get_fb_credentials():
     with open('config.yaml', 'r') as f:
         try:
             config = load(f)
-            fb_email, fb_pw = config['config']['facebook_login'], config['config']['facebook_pw']
+            fb_email, fb_pw = b64(config['config']['facebook_login']), b64(
+                config['config']['facebook_pw'])
         except YAMLError as e:
             print(e)
     return [fb_email, fb_pw]
@@ -32,8 +34,8 @@ def get_goog_credentials():
     with open('config.yaml', 'r') as f:
         try:
             config = load(f)
-            goog_email, dcu_uname, dcu_pw = config['config']['gmail'], config[
-                'config']['dcu_uname'], config['config']['dcu_pw']
+            goog_email, dcu_uname, dcu_pw = b64(config['config']['gmail']), b64(config[
+                'config']['dcu_uname']), b64(config['config']['dcu_pw'])
         except YAMLError as e:
             print(e)
     return [goog_email, dcu_uname, dcu_pw]
@@ -49,22 +51,14 @@ def event_setup():
 
 def setup_driver():
     options = Options()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     options.add_argument("--disable-notifications")
-    with open('config.yaml', 'r') as f:
-        try:
-            config = load(f)
-            driver = config['config']['driver']
-        except YAMLError as e:
-            print(e)
-
-    if driver == 'firefox':
-        ffprofile = webdriver.FirefoxProfile()
-        ffprofile.set_preference("dom.webnotifications.enabled", False)
-        driver = webdriver.Firefox(
-            firefox_profile=ffprofile,
-            firefox_options=options,
-            executable_path='/usr/local/bin/geckodriver')
+    ffprofile = webdriver.FirefoxProfile()
+    ffprofile.set_preference("dom.webnotifications.enabled", False)
+    driver = webdriver.Firefox(
+        firefox_profile=ffprofile,
+        firefox_options=options,
+        executable_path='/usr/local/bin/geckodriver')
     return driver
 
 
@@ -77,8 +71,8 @@ def fb_login(fb, event_description, details):
     email = driver.find_element_by_name('email')
     pw = driver.find_element_by_name('pass')
     login = driver.find_element_by_name('login')
-    email.send_keys(fb[0])
-    pw.send_keys(fb[1])
+    email.send_keys(fb[0].decode())
+    pw.send_keys(fb[1].decode())
     login.click()
     fb_create(driver, event_description, details)
 
@@ -158,15 +152,15 @@ def goog_login(google, event_description, details):
 
     email = driver.find_element_by_id('identifierId')
     next = driver.find_element_by_id('identifierNext')
-    email.send_keys(google[0])
+    email.send_keys(google[0].decode())
     next.click()
     element = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "username"))
     )
     uname = driver.find_element_by_id('username')
     pw = driver.find_element_by_id('password')
-    uname.send_keys(google[1])
-    pw.send_keys(google[2])
+    uname.send_keys(google[1].decode())
+    pw.send_keys(google[2].decode())
     proceed = driver.find_element_by_name('_eventId_proceed')
     element = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.NAME, "_eventId_proceed"))
@@ -180,7 +174,7 @@ def cal_create(driver, event_description, details, google):
 
     email = driver.find_element_by_id('identifierId')
     next = driver.find_element_by_id('identifierNext')
-    email.send_keys(google[0])
+    email.send_keys(google[0].decode())
     element = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.ID, "identifierNext"))
     )
@@ -240,7 +234,7 @@ def cal_create(driver, event_description, details, google):
 
 
 def book_lab(goog, details):
-    FROM = goog[0]
+    FROM = goog[0].decode()
     TO = ['irene.mcevoy@dcu.ie']
     SUBJECT = 'Lab Booking'
     BODY = "Just wondering if you could book " + \
@@ -252,7 +246,7 @@ def book_lab(goog, details):
     server = smtplib.SMTP("smtp.gmail.com", 587)
     server.ehlo()
     server.starttls()
-    server.login(goog[0], goog[2])
+    server.login(goog[0].decode(), goog[2].decode())
     server.sendmail(FROM, TO, message)
     server.close()
 
