@@ -39,7 +39,7 @@ setup(name='neo',
       license='GPL-3.0',
       scripts=['scripts/neo', 'scripts/main.py'],
       install_requires=[
-          'click', 'selenium', 'pyyaml', 'pycrypto'
+          'click', 'selenium', 'pyyaml'
       ],
       classifiers=[
           'Environment :: Console',
