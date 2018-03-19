@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+ !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 from yaml import load, dump, YAMLError
@@ -27,6 +27,8 @@ with open("config.yaml", 'r') as f:
             dump(config, f)
     except YAMLError as e:
         print(e)
+
+system("chmod +x install_driver.sh && ./install_driver.sh")
 
 setup(name='neo',
       version='0.1.0',
