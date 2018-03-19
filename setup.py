@@ -1,9 +1,10 @@
- !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 from yaml import load, dump, YAMLError
 from getpass import getpass
 from base64 import b64encode as b64
+from os import system
 with open("config.yaml", 'r') as f:
     try:
         config = load(f)
