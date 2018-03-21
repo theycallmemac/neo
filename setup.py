@@ -3,19 +3,21 @@
 from setuptools import setup, find_packages
 from yaml import load, dump, YAMLError
 from getpass import getpass
-from base64 import b64encode as b64
+from base64 import b64encode as be64
+from base64 import b64decode as bd64
 from os import system
+from sys import exit
 with open("config.yaml", 'r') as f:
     try:
         config = load(f)
         name = input("Your name: ")
-        fb_log = b64(
+        fb_log = be64(
             input("Your Facebook sign in (email or phone number): ").encode())
-        fb_pw = b64(getpass("Your Facebook password: ").encode())
-        gmail = b64(input("Your DCU email: ").encode())
-        dcu_uname = b64(input("Your DCU username: ").encode())
-        dcu_pw = b64(getpass("Your DCU password: ").encode())
-        driver = b64(input("Firefox or Chrome?: ").encode())
+        fb_pw = be64(getpass("Your Facebook password: ").encode())
+        gmail = be64(input("Your DCU email: ").encode())
+        dcu_uname = be64(input("Your DCU username: ").encode())
+        dcu_pw = be64(getpass("Your DCU password: ").encode())
+        driver = input("Firefox or Chrome?: ").lower().strip()
         config['config']['name'] = name
         config['config']['facebook_login'] = fb_log
         config['config']['facebook_pw'] = fb_pw
@@ -29,7 +31,19 @@ with open("config.yaml", 'r') as f:
     except YAMLError as e:
         print(e)
 
-system("chmod +x install_driver.sh && ./install_driver.sh")
+with open("config.yaml", 'r') as f:
+    try:
+        config = load(f)
+        if config['config']['driver'] == 'firefox':
+            system("chmod +x gecko_install.sh && ./gecko_install.sh")
+        elif config['config']['driver'] == 'chrome':
+            system("chmod +x chrome_install.sh && ./chrome_install.sh")
+        else:
+            print(
+                f"neo only supports firefox and chrome, {bd64(driver).decode()} is not supported.")
+            exit()
+    except YAMLError as e:
+        print(e)
 
 setup(name='neo',
       version='0.1.0',

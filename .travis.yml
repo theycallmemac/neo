@@ -8,8 +8,9 @@ addons:
 
 before_install:
     - pip install pep8
-    - sudo chmod +x install_driver.sh
-    - ./install_driver.sh
+    - sudo chmod +x *install.sh
+    - ./gecko_install.sh
+    - ./chrome_install.sh
 
 install:
     - pip install -r requirements.txt

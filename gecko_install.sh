@@ -30,7 +30,7 @@ function driver_installation() {
     chmod 755 geckodriver*
     sudo mv geckodriver /usr/local/bin/
     export PATH=$PATH:/usr/local/bin/geckodriver
-    rm *.tar*
+    rm *gecko*
 }
 
 main() {

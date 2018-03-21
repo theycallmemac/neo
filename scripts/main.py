@@ -8,6 +8,7 @@ from subprocess import call
 from click import command, echo, argument
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver import ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -49,16 +50,41 @@ def event_setup():
         return [title, description]
 
 
+def get_driver():
+    with open('config.yaml', 'r') as f:
+        try:
+            config = load(f)
+            if config['config']['driver'] == "firefox":
+                options = Options()
+                # options.add_argument("--headless")
+                options.add_argument("--disable-notifications")
+                ffprofile = webdriver.FirefoxProfile()
+                ffprofile.set_preference("dom.webnotifications.enabled", False)
+                driver = webdriver.Firefox(
+                    firefox_profile=ffprofile,
+                    firefox_options=options,
+                    executable_path='/usr/local/bin/geckodriver')
+            elif config['config']['driver'] == "chrome":
+                options = ChromeOptions()
+                # options.add_argument("--headless")
+                options.add_argument("--disable-notifications")
+                prefs = {"profile.default_content_setting_values.notifications" : 2}
+                options.add_experimental_option("prefs",prefs)
+                driver = webdriver.Chrome(
+                    chrome_options=options,
+                    executable_path='/usr/local/bin/chromedriver')
+            else:
+                print(f"{b64(config['config']['driver'])} is not supported")
+                exit()
+
+            return driver
+
+        except YAMLError as e:
+            print(e)
+
+
 def setup_driver():
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--disable-notifications")
-    ffprofile = webdriver.FirefoxProfile()
-    ffprofile.set_preference("dom.webnotifications.enabled", False)
-    driver = webdriver.Firefox(
-        firefox_profile=ffprofile,
-        firefox_options=options,
-        executable_path='/usr/local/bin/geckodriver')
+    driver = get_driver()
     return driver
 
 
@@ -130,9 +156,9 @@ def fb_create(driver, event_description, details):
         f'arguments[0].innerHTML = "{finish_min}";', end_min)
     driver.execute_script(
         f'arguments[0].innerHTML = "{ampm}";', end_ampm)
-    submit = driver.find_element(
-        By.XPATH, "//button[@data-testid='event-create-dialog-confirm-button']")
-    submit.click()
+    # submit = driver.find_element(
+    #    By.XPATH, "//button[@data-testid='event-create-dialog-confirm-button']")
+    # submit.click()
     driver.quit()
 
 
@@ -228,14 +254,14 @@ def cal_create(driver, event_description, details, google):
         if cal.text == "Redbrick DCU's Networking Society":
             cal.click()
             break
-    save = driver.find_elements_by_class_name('RveJvd')[6]
-    save.click()
+    #save = driver.find_elements_by_class_name('RveJvd')[6]
+    # save.click()
     driver.quit()
 
 
 def book_lab(goog, details):
     FROM = goog[0].decode()
-    TO = ['irene.mcevoy@dcu.ie']
+    TO = ['james.mcdermott89@gmail.com']
     SUBJECT = 'Lab Booking'
     BODY = "Just wondering if you could book " + \
         details[0] + " on the " + \

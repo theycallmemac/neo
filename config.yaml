@@ -1,2 +1,8 @@
-config: {dcu_pw: '', dcu_uname: '', facebook_login: '', facebook_pw: '', gmail: '',
-  name: ''}
+config:
+  dcu_pw: !!binary ""
+  dcu_uname: !!binary ""
+  driver: chrome
+  facebook_login: !!binary ""
+  facebook_pw: !!binary ""
+  gmail: !!binary ""
+  name: ''
