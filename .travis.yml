@@ -5,6 +5,7 @@ python:
 
 addons:
   firefox: latest
+  chrome: stable
 
 before_install:
     - pip install pep8

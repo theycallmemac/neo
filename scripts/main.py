@@ -56,7 +56,7 @@ def get_driver():
             config = load(f)
             if config['config']['driver'] == "firefox":
                 options = Options()
-                # options.add_argument("--headless")
+                options.add_argument("--headless")
                 options.add_argument("--disable-notifications")
                 ffprofile = webdriver.FirefoxProfile()
                 ffprofile.set_preference("dom.webnotifications.enabled", False)
@@ -66,10 +66,10 @@ def get_driver():
                     executable_path='/usr/local/bin/geckodriver')
             elif config['config']['driver'] == "chrome":
                 options = ChromeOptions()
-                # options.add_argument("--headless")
+                options.add_argument("--headless")
                 options.add_argument("--disable-notifications")
-                prefs = {"profile.default_content_setting_values.notifications" : 2}
-                options.add_experimental_option("prefs",prefs)
+                prefs = {"profile.default_content_setting_values.notifications": 2}
+                options.add_experimental_option("prefs", prefs)
                 driver = webdriver.Chrome(
                     chrome_options=options,
                     executable_path='/usr/local/bin/chromedriver')
@@ -156,9 +156,9 @@ def fb_create(driver, event_description, details):
         f'arguments[0].innerHTML = "{finish_min}";', end_min)
     driver.execute_script(
         f'arguments[0].innerHTML = "{ampm}";', end_ampm)
-    # submit = driver.find_element(
-    #    By.XPATH, "//button[@data-testid='event-create-dialog-confirm-button']")
-    # submit.click()
+    submit = driver.find_element(
+        By.XPATH, "//button[@data-testid='event-create-dialog-confirm-button']")
+    submit.click()
     driver.quit()
 
 
@@ -254,14 +254,14 @@ def cal_create(driver, event_description, details, google):
         if cal.text == "Redbrick DCU's Networking Society":
             cal.click()
             break
-    #save = driver.find_elements_by_class_name('RveJvd')[6]
-    # save.click()
+    save = driver.find_elements_by_class_name('RveJvd')[6]
+    save.click()
     driver.quit()
 
 
 def book_lab(goog, details):
     FROM = goog[0].decode()
-    TO = ['james.mcdermott89@gmail.com']
+    TO = ['irene.mcevoy@dcu.ie']
     SUBJECT = 'Lab Booking'
     BODY = "Just wondering if you could book " + \
         details[0] + " on the " + \

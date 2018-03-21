@@ -29,8 +29,8 @@ After installation simply run something like:
 - click==6.7
 - selenium==3.9.0
 - pyyaml==3.12.0
-- geckodriver==0.20.0
-- firefox==59.0.0
+- geckodriver==0.20.0 / chromedriver==2.x.0
+- firefox==59.0.0 / chrome==65.0.0
 
 ### What it can do
 The main aim of this program is to perform Facebook event creation, Google Calendar event creation, and event location booking. This will be done use the ```concurrent.futures``` library.

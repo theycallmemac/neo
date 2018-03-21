@@ -1,7 +1,10 @@
 # distribution / packaging
 env/
 *.egg-info/
-
+scripts/__pycache__
 
 # browser engine logs
 geckodriver.log
+
+# files accidentally committed
+__init__.py
